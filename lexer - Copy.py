@@ -5,7 +5,8 @@ class Lexer:
         self.WHITESPACE = {' ', '\t', '\n'}
 
         self.TOKEN_REGEX = [
-            (r':=', 'IS'),
+            (r':=', 'ASSIGN'),
+            (r'writeln', 'WRITELN'),
             (r'\bprogram\b', 'PROGRAM'),
             (r'\bvar\b', 'VAR'),
             (r'\bbegin\b', 'BEGIN'),
@@ -65,25 +66,131 @@ class Lexer:
 
         return tokens
 
+
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.current_token_index = 0
+        self.current_token = self.tokens[self.current_token_index]
+        self.error_occurred = False
+
+    def consume_token(self):
+        self.current_token_index += 1
+        if self.current_token_index < len(self.tokens):
+            self.current_token = self.tokens[self.current_token_index]
+        else:
+            self.current_token = None
+
+    def match(self, expected_token_type):
+        if self.current_token and self.current_token[0] == expected_token_type:
+            self.consume_token()
+        else:
+            # raise SyntaxError(f"Expected {expected_token_type}, but found {self.current_token[0]}")
+            if(self.current_token):
+                self.error_occurred = True
+                print(F"Syntax Error: Expected {expected_token_type}, but found {self.current_token[0]}")
+
+    def program(self):
+        self.match('PROGRAM')
+        self.match('ID')
+        self.match('SEMICOLON')
+        self.declarations()
+        self.match('BEGIN')
+        self.statement_list()
+        self.match('END')
+
+    def declarations(self):
+        if self.current_token and self.current_token[0] == 'VAR':
+            self.match('VAR')
+            self.variable_list()
+            self.match('SEMICOLON')
+
+    def variable_list(self):
+        while self.current_token and self.current_token[0] == ('ID' or 'COMMA'):
+            self.match('ID')
+            if self.current_token and self.current_token[0] == 'COMMA':
+                self.match('COMMA')
+
+    def statement_list(self):
+        self.statement()
+        while self.current_token and self.current_token[0] == 'SEMICOLON':
+            self.match('SEMICOLON')
+            self.statement()
+
+    def statement(self):
+        if self.current_token and self.current_token[0] == 'ID':
+            self.match('ID')
+            self.match('ASSIGN')
+            self.expression()
+        elif self.current_token and self.current_token[0] == 'IF':
+            self.match('IF')
+            self.expression()
+            self.match('THEN')
+            self.statement_list()
+            if self.current_token and self.current_token[0] == 'ELSE':
+                self.match('ELSE')
+                self.statement_list()
+        elif self.current_token and self.current_token[0] == 'WHILE':
+            self.match('WHILE')
+            self.expression()
+            self.match('DO')
+            self.statement_list()
+        elif self.current_token and self.current_token[0] == 'WRITELN':
+            self.match('WRITELN')
+            self.match('LPAREN')
+            self.expression()
+            self.match('RPAREN')
+
+    def expression(self):
+        self.simple_expression()
+        if self.current_token and self.current_token[0] in ['EQUALS', 'GTHAN', 'LTHAN']:
+            self.match(self.current_token[0])
+            self.simple_expression()
+
+    def simple_expression(self):
+        self.term()
+        while self.current_token and self.current_token[0] in ['PLUS', 'MINUS']:
+            self.match(self.current_token[0])
+            self.term()
+
+    def term(self):
+        self.factor()
+        while self.current_token and self.current_token[0] in ['TIMES', 'DIVIDE']:
+            self.match(self.current_token[0])
+            self.factor()
+
+    def factor(self):
+        if self.current_token and self.current_token[0] == 'ID':
+            self.match('ID')
+        elif self.current_token and self.current_token[0] == 'NUMBER':
+            self.match('NUMBER')
+        elif self.current_token and self.current_token[0] == 'LPAREN':
+            self.match('LPAREN')
+            self.expression()
+            self.match('RPAREN')
+        else:
+            self.error_occurred = True
+            print(f"Invalid factor: {self.current_token[0]}")   
+
 if __name__ == "__main__":
     input_text = """
     program HelloWorld;
     var
-      x, y: integer;
+        x,y;
     begin
-      x := 10;
-      y := 20;
-      if x > y then
+        x := 10;
+        y := 20;
+        if x > y then
         writeln(x)
-      else
+        else
         writeln(y)
     end
     """
 
     lexer = Lexer()
-    
     tokens = lexer.lex(input_text)
-    for token_type, token, line in tokens:
-        print(f"Token: {token_type}, Lexeme: {token}, Line: {line}")
 
-
+    parser = Parser(tokens)
+    parser.program()
+    if parser.error_occurred == False:
+        print("Синтаксических ошибок не обнаружено")
