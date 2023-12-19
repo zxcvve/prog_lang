@@ -1,37 +1,46 @@
 import re
 
+WRITE_LOG = True
+
+
+# clear log file
+if WRITE_LOG:
+    with open("log.txt", "w") as log:
+        log.write("")
+
+
 class Lexer:
     def __init__(self):
-        self.WHITESPACE = {' ', '\t', '\n'}
+        self.WHITESPACE = {" ", "\t", "\n"}
 
         self.TOKEN_REGEX = [
-            (r':=', 'ASSIGN'),
-            (r'writeln', 'WRITELN'),
-            (r'\bprogram\b', 'PROGRAM'),
-            (r'\bvar\b', 'VAR'),
-            (r'\bbegin\b', 'BEGIN'),
-            (r'\bend\b', 'END'),
-            (r'\bif\b', 'IF'),
-            (r'\bthen\b', 'THEN'),
-            (r'\belse\b', 'ELSE'),
-            (r'\bwhile\b', 'WHILE'),
-            (r'\bdo\b', 'DO'),
-            (r'\bdiv\b', 'DIV'),
-            (r'\bmod\b', 'MOD'),
-            (r'[a-zA-Z_][a-zA-Z0-9_]*', 'ID'),
-            (r'\d+', 'NUMBER'),
-            (r'\+', 'PLUS'),
-            (r'-', 'MINUS'),
-            (r'\*', 'TIMES'),
-            (r'/', 'DIVIDE'),
-            (r'\(', 'LPAREN'),
-            (r'\)', 'RPAREN'),
-            (r'=', 'EQUALS'),
-            (r';', 'SEMICOLON'),
-            (r',', 'COMMA'),
-            (r':', 'COLON'),
-            (r'>', 'GTHAN'),
-            (r'<', 'LTHAN'),
+            (r":=", "ASSIGN"),
+            (r"writeln", "WRITELN"),
+            (r"\bprogram\b", "PROGRAM"),
+            (r"\bvar\b", "VAR"),
+            (r"\bbegin\b", "BEGIN"),
+            (r"\bend\b", "END"),
+            (r"\bif\b", "IF"),
+            (r"\bthen\b", "THEN"),
+            (r"\belse\b", "ELSE"),
+            (r"\bwhile\b", "WHILE"),
+            (r"\bdo\b", "DO"),
+            (r"\bdiv\b", "DIV"),
+            (r"\bmod\b", "MOD"),
+            (r"[a-zA-Z_][a-zA-Z0-9_]*", "ID"),
+            (r"\d+", "NUMBER"),
+            (r"\+", "PLUS"),
+            (r"-", "MINUS"),
+            (r"\*", "TIMES"),
+            (r"/", "DIVIDE"),
+            (r"\(", "LPAREN"),
+            (r"\)", "RPAREN"),
+            (r"=", "EQUALS"),
+            (r";", "SEMICOLON"),
+            (r",", "COMMA"),
+            (r":", "COLON"),
+            (r">", "GTHAN"),
+            (r"<", "LTHAN"),
         ]
 
     def error_handler(self, line, position, error_type):
@@ -57,7 +66,7 @@ class Lexer:
             if not match:
                 char = input_text[position]
                 if char in self.WHITESPACE:
-                    if char == '\n':
+                    if char == "\n":
                         line += 1
                     position += 1
                 else:
@@ -85,94 +94,102 @@ class Parser:
         if self.current_token and self.current_token[0] == expected_token_type:
             self.consume_token()
         else:
-            # raise SyntaxError(f"Expected {expected_token_type}, but found {self.current_token[0]}")
-            if(self.current_token):
+            if self.current_token:
                 self.error_occurred = True
-                print(F"Syntax Error: Expected {expected_token_type}, but found {self.current_token[0]}")
+                msg = f"Syntax Error: Expected {expected_token_type}, but found {self.current_token[0]}\n"
+                print(msg)
+                log(msg)
 
     def program(self):
-        self.match('PROGRAM')
-        self.match('ID')
-        self.match('SEMICOLON')
+        self.match("PROGRAM")
+        self.match("ID")
+        self.match("SEMICOLON")
         self.declarations()
-        self.match('BEGIN')
+        self.match("BEGIN")
         self.statement_list()
-        self.match('END')
+        self.match("END")
 
     def declarations(self):
-        if self.current_token and self.current_token[0] == 'VAR':
-            self.match('VAR')
+        if self.current_token and self.current_token[0] == "VAR":
+            self.match("VAR")
             self.variable_list()
-            self.match('SEMICOLON')
+            self.match("SEMICOLON")
 
     def variable_list(self):
-        while self.current_token and self.current_token[0] == ('ID' or 'COMMA'):
-            self.match('ID')
-            if self.current_token and self.current_token[0] == 'COMMA':
-                self.match('COMMA')
+        while self.current_token and self.current_token[0] == ("ID" or "COMMA"):
+            self.match("ID")
+            if self.current_token and self.current_token[0] == "COMMA":
+                self.match("COMMA")
 
     def statement_list(self):
         self.statement()
-        while self.current_token and self.current_token[0] == 'SEMICOLON':
-            self.match('SEMICOLON')
+        while self.current_token and self.current_token[0] == "SEMICOLON":
+            self.match("SEMICOLON")
             self.statement()
 
     def statement(self):
-        if self.current_token and self.current_token[0] == 'ID':
-            self.match('ID')
-            self.match('ASSIGN')
+        if self.current_token and self.current_token[0] == "ID":
+            self.match("ID")
+            self.match("ASSIGN")
             self.expression()
-        elif self.current_token and self.current_token[0] == 'IF':
-            self.match('IF')
+        elif self.current_token and self.current_token[0] == "IF":
+            self.match("IF")
             self.expression()
-            self.match('THEN')
+            self.match("THEN")
             self.statement_list()
-            if self.current_token and self.current_token[0] == 'ELSE':
-                self.match('ELSE')
+            if self.current_token and self.current_token[0] == "ELSE":
+                self.match("ELSE")
                 self.statement_list()
-        elif self.current_token and self.current_token[0] == 'WHILE':
-            self.match('WHILE')
+        elif self.current_token and self.current_token[0] == "WHILE":
+            self.match("WHILE")
             self.expression()
-            self.match('DO')
+            self.match("DO")
             self.statement_list()
-        elif self.current_token and self.current_token[0] == 'WRITELN':
-            self.match('WRITELN')
-            self.match('LPAREN')
+        elif self.current_token and self.current_token[0] == "WRITELN":
+            self.match("WRITELN")
+            self.match("LPAREN")
             self.expression()
-            self.match('RPAREN')
+            self.match("RPAREN")
 
     def expression(self):
         self.simple_expression()
-        if self.current_token and self.current_token[0] in ['EQUALS', 'GTHAN', 'LTHAN']:
+        if self.current_token and self.current_token[0] in ["EQUALS", "GTHAN", "LTHAN"]:
             self.match(self.current_token[0])
             self.simple_expression()
 
     def simple_expression(self):
         self.term()
-        while self.current_token and self.current_token[0] in ['PLUS', 'MINUS']:
+        while self.current_token and self.current_token[0] in ["PLUS", "MINUS"]:
             self.match(self.current_token[0])
             self.term()
 
     def term(self):
         self.factor()
-        while self.current_token and self.current_token[0] in ['TIMES', 'DIVIDE']:
+        while self.current_token and self.current_token[0] in ["TIMES", "DIVIDE"]:
             self.match(self.current_token[0])
             self.factor()
 
     def factor(self):
-        if self.current_token and self.current_token[0] == 'ID':
-            self.match('ID')
-        elif self.current_token and self.current_token[0] == 'NUMBER':
-            self.match('NUMBER')
-        elif self.current_token and self.current_token[0] == 'LPAREN':
-            self.match('LPAREN')
+        if self.current_token and self.current_token[0] == "ID":
+            self.match("ID")
+        elif self.current_token and self.current_token[0] == "NUMBER":
+            self.match("NUMBER")
+        elif self.current_token and self.current_token[0] == "LPAREN":
+            self.match("LPAREN")
             self.expression()
-            self.match('RPAREN')
+            self.match("RPAREN")
         else:
             self.error_occurred = True
-            # print(f"Invalid factor: {self.current_token[0]}")
-            print(F"Syntax Error: {self.current_token[0]}")
-   
+            msg = f"Syntax Error: {self.current_token[0]}\n"
+            print(msg)
+            log(msg)
+
+
+def log(text):
+    if WRITE_LOG:
+        with open("log.txt", "a") as log:
+            log.write(text)
+
 
 if __name__ == "__main__":
     input_text = """
@@ -195,4 +212,7 @@ if __name__ == "__main__":
     parser = Parser(tokens)
     parser.program()
     if parser.error_occurred == False:
-        print("No Syntax Errors Found")
+        msg = "No Syntax Errors Found\n"
+        print(msg)
+        log(msg)
+
