@@ -195,4 +195,4 @@ if __name__ == "__main__":
     parser = Parser(tokens)
     parser.program()
     if parser.error_occurred == False:
-        print("Синтаксических ошибок не обнаружено")
+        print("No Syntax Errors Found")
