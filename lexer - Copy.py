@@ -170,7 +170,9 @@ class Parser:
             self.match('RPAREN')
         else:
             self.error_occurred = True
-            print(f"Invalid factor: {self.current_token[0]}")   
+            # print(f"Invalid factor: {self.current_token[0]}")
+            print(F"Syntax Error: {self.current_token[0]}")
+   
 
 if __name__ == "__main__":
     input_text = """
